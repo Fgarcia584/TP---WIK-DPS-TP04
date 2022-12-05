@@ -1,0 +1,116 @@
+# apiVersion: v1
+# kind: Pod
+# metadata:
+#   name: wiktp04
+#   namespace: default
+# spec:
+#   containers:
+#     - name: wiktp04
+#       image: registry.cluster.wik.cloud/public/echo
+#       ports:
+#       - containerPort: 8080
+#       resources:
+#           requests:
+#             cpu: 60m
+#             memory: 50Mi
+#           limits:
+#             cpu: 60m
+#             memory: 50Mi
+# ---
+# apiVersion: apps/v1
+# kind: ReplicaSet
+# metadata:
+#   name: wiktp04
+#   namespace: default
+#   labels:
+#     tp : tp4
+# spec:
+#   replicas: 4
+#   selector:
+#     matchLabels:
+#       tp : tp4
+#   template:
+#     metadata:
+#       labels:
+#        tp : tp4
+#     spec:
+#       containers:
+#         - name: wiktp04
+#           image: registry.cluster.wik.cloud/public/echo
+#           ports:
+#           - containerPort: 8080
+#           resources:
+#               requests:
+#                 cpu: 60m
+#                 memory: 50Mi
+#               limits:
+#                 cpu: 60m
+#                 memory: 50Mi
+# ---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wiktp04
+spec:
+  selector:
+    tp : tp4
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wiktp04
+  namespace: default
+  labels:
+    tp : tp4
+spec:
+  replicas: 4
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 50%
+  selector:
+    matchLabels:
+      tp : tp4
+  template:
+    metadata:
+      labels:
+       tp : tp4
+    spec:
+      containers:
+        - name: wiktp04
+          image: registry.cluster.wik.cloud/public/echo
+          ports:
+          - containerPort: 8080
+          resources:
+              requests:
+                cpu: 50m
+                memory: 50Mi
+              limits:
+                cpu: 50m
+                memory: 50Mi
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wiktp04
+  namespace: default
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+spec:
+  ingressClassName: nginx
+  rules:
+  - host : ingresstp4.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: wiktp04
+            port:
+              number: 8080
